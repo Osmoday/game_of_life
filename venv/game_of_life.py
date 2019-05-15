@@ -52,21 +52,6 @@ class Window(QMainWindow):
         self.game = Game(20)
         self.cell_w = self.width / self.game.size
         self.cell_h = self.height / self.game.size
-        # Wiatrak
-        # self.game.game_board[4][2].toggle_state()
-        # self.game.game_board[4][3].toggle_state()
-        # self.game.game_board[4][4].toggle_state()
-        # Collapse to stable
-        # self.game.game_board[6][5].toggle_state()
-        # self.game.game_board[6][6].toggle_state()
-        # self.game.game_board[7][5].toggle_state()
-        # Połamany Szybowiec
-        # self.game.game_board[1][3].toggle_state()
-        # self.game.game_board[2][4].toggle_state()
-        # self.game.game_board[3][3].toggle_state()
-        # self.game.game_board[3][4].toggle_state()
-        # self.game.game_board[3][5].toggle_state()
-        # Szybowiec
         self.game.game_board[1][3].toggle_state()
         self.game.game_board[2][4].toggle_state()
         self.game.game_board[3][2].toggle_state()
