@@ -87,6 +87,7 @@ class Window(QMainWindow):
         pos_y = 0
         for y in range(0, self.game.size):
             for x in range(0, self.game.size):
+                self.game.game_board[y][x].define_center(pos_y, pos_x, self.cell_h, self.cell_w)
                 painter.fillRect(pos_x, pos_y, self.cell_w, self.cell_h, self.game.game_board[y][x].state)
                 pos_x += self.cell_w
             pos_x = 0
@@ -104,6 +105,18 @@ class Window(QMainWindow):
         if e.key() == Qt.Key_Space:
             self.game.update()
             self.update()
+
+    def mousePressEvent(self, e):
+        dists = list()
+        cells = list()
+        print(e.x(), e.y())
+        for y in range(0, self.game.size):
+            for x in range(0, self.game.size):
+                dist = ((e.x() - self.game.game_board[y][x].center[1]) ** 2) + ((e.y() - self.game.game_board[y][x].center[0]) ** 2)
+                dists.append(dist)
+                cells.append(self.game.game_board[y][x])
+        cells[dists.index(min(dists))].toggle_state()
+        self.update()
 
 
 class Game:
@@ -150,6 +163,7 @@ class Game:
 class Cell:
     def __init__(self):
         self.state = Qt.white
+        self.center = tuple()
 
     def toggle_state(self):
         if self.state == Qt.white:
@@ -162,6 +176,9 @@ class Cell:
             return 0
         else:
             return 1
+
+    def define_center(self, y, x, h, w):
+        self.center = (y + 0.5 * h, x + 0.5 * w)
 
 
 app = QApplication([])
