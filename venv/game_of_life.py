@@ -40,6 +40,7 @@ import time
 #         self.backing_store = QBackingStore(self)
 #         self.setGeometry(100, 100, 300, 200)
 
+
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -52,11 +53,11 @@ class Window(QMainWindow):
         self.game = Game(20)
         self.cell_w = self.width / self.game.size
         self.cell_h = self.height / self.game.size
-        self.game.game_board[1][3].toggle_state()
-        self.game.game_board[2][4].toggle_state()
-        self.game.game_board[3][2].toggle_state()
-        self.game.game_board[3][3].toggle_state()
-        self.game.game_board[3][4].toggle_state()
+        # self.game.game_board[1][3].toggle_state()
+        # self.game.game_board[2][4].toggle_state()
+        # self.game.game_board[3][2].toggle_state()
+        # self.game.game_board[3][3].toggle_state()
+        # self.game.game_board[3][4].toggle_state()
         self.init_window()
 
     def init_window(self):
@@ -72,7 +73,7 @@ class Window(QMainWindow):
         pos_y = 0
         for y in range(0, self.game.size):
             for x in range(0, self.game.size):
-                self.game.game_board[y][x].define_center(pos_y, pos_x, self.cell_h, self.cell_w)
+                # self.game.game_board[y][x].define_center(pos_y, pos_x, self.cell_h, self.cell_w)
                 painter.fillRect(pos_x, pos_y, self.cell_w, self.cell_h, self.game.game_board[y][x].state)
                 pos_x += self.cell_w
             pos_x = 0
@@ -102,12 +103,8 @@ class Window(QMainWindow):
         #         dists.append(dist)
         #         cells.append(self.game.game_board[y][x])
         # cells[dists.index(min(dists))].toggle_state()
-        index_x = int(e.x()/self.cell_w)
-        index_y = int(e.y()/self.cell_h)
-        self.game.game_board[index_y][index_x].toggle_state()
-        # time2 = time.process_time_ns()
+        self.game.create_cell()
         self.update()
-        # print(time2 - time1)
 
 
 class Game:
@@ -149,6 +146,11 @@ class Game:
                     if cnt == 2 or cnt == 3:
                         buffer.game_board[y][x] = self.game_board[y][x]
         self.game_board = buffer.game_board
+
+    def create_cell(self, x, y, width, height):
+        index_x = int(x / width)
+        index_y = int(y / height)
+        self.game.game_board[index_y][index_x] = Cell()
 
 
 class Cell:
