@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-
+import time
 
 # class RasterWindow(QWindow):
 #
@@ -92,16 +92,22 @@ class Window(QMainWindow):
             self.update()
 
     def mousePressEvent(self, e):
-        dists = list()
-        cells = list()
-        print(e.x(), e.y())
-        for y in range(0, self.game.size):
-            for x in range(0, self.game.size):
-                dist = ((e.x() - self.game.game_board[y][x].center[1]) ** 2) + ((e.y() - self.game.game_board[y][x].center[0]) ** 2)
-                dists.append(dist)
-                cells.append(self.game.game_board[y][x])
-        cells[dists.index(min(dists))].toggle_state()
+        # time1 = time.process_time_ns()
+        # dists = list()
+        # cells = list()
+        # print(e.x(), e.y())
+        # for y in range(0, self.game.size):
+        #     for x in range(0, self.game.size):
+        #         dist = ((e.x() - self.game.game_board[y][x].center[1]) ** 2) + ((e.y() - self.game.game_board[y][x].center[0]) ** 2)
+        #         dists.append(dist)
+        #         cells.append(self.game.game_board[y][x])
+        # cells[dists.index(min(dists))].toggle_state()
+        index_x = int(e.x()/self.cell_w)
+        index_y = int(e.y()/self.cell_h)
+        self.game.game_board[index_y][index_x].toggle_state()
+        # time2 = time.process_time_ns()
         self.update()
+        # print(time2 - time1)
 
 
 class Game:
