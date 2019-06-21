@@ -45,7 +45,10 @@ class Window(QMainWindow):
             pos_x = 0
             pos_y += self.cell_h
         for cell in self.game.game_board:
-            painter.fillRect(cell[1] * self.cell_w, cell[0] * self.cell_h, self.cell_w, self.cell_h, Qt.black)
+            if cell[2]:
+                painter.fillRect(cell[1] * self.cell_w+1, cell[0] * self.cell_h+1, self.cell_w-1, self.cell_h-1, Qt.black)
+            else:
+                painter.fillRect(cell[1] * self.cell_w+1, cell[0] * self.cell_h+1, self.cell_w-1, self.cell_h-1, Qt.cyan)
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Space:
@@ -75,8 +78,18 @@ class Game:
     def create_cell(self, x, y, width, height, board):
         index_x = int(x / width)
         index_y = int(y / height)
-        board.append((index_y, index_x, True))
-        board.sort(key=itemgetter(0, 1))
+        found = False
+        for index in range(0, board.__len__()):
+            if board[index][0] == index_y and board[index][1] == index_x:
+                if not board[index][2]:
+                    board[index] = (index_y, index_x, True)
+                    found = True
+                    break
+                else:
+                    board[index] = (index_y, index_x, False)
+                    return
+        if not found:
+            board.append((index_y, index_x, True))
         neighbours = [
             [0, 0, 0],
             [0, 1, 0],
@@ -100,36 +113,43 @@ class Game:
         buffer = list()
         self.game_board.sort(key=itemgetter(0, 1))
         print(self.game_board)
-        living_neighbours = 0
         for index in range(0, self.game_board.__len__()):
-            index = index
+            living_neighbours = 0
             cell = self.game_board[index]
             index_b = index-1
             index_f = index+1
             if index_b >= 0:
-                while():
+                while True:
+                    print(index_b, "ecksdee")
+                    if index_b < 0:
+                        break
                     if self.game_board[index_b][0] == cell[0] or self.game_board[index_b][0] == cell[0]-1:
-                        if self.game_board[index_b][1] == cell[1]-1 or self.game_board[index_b][1] == cell[1] or self.game_board[index_b][1] == cell[1]+1:
-                            living_neighbours += 1
-                        else:
-                            index_b -= 1
+                        if self.game_board[index_b][2]:
+                            if self.game_board[index_b][1] == cell[1]-1 or self.game_board[index_b][1] == cell[1] or self.game_board[index_b][1] == cell[1]+1:
+                                living_neighbours += 1
                     else:
                         break
+                    index_b -= 1
             if index_f < self.game_board.__len__():
-                while():
-                    if self.game_board[index_f][0] == cell[0] or self.game_board[index_f][0] == cell[0]-1:
-                        if self.game_board[index_f][1] == cell[1]-1 or self.game_board[index_f][1] == cell[1] or self.game_board[index_f][1] == cell[1]+1:
-                            living_neighbours += 1
-                        else:
-                            index_b += 1
+                while True:
+                    print(index_f)
+                    if index_f == self.game_board.__len__():
+                        break
+                    if self.game_board[index_f][0] == cell[0] or self.game_board[index_f][0] == cell[0]+1:
+                        if self.game_board[index_f][2]:
+                            if self.game_board[index_f][1] == cell[1]-1 or self.game_board[index_f][1] == cell[1] or self.game_board[index_f][1] == cell[1]+1:
+                                living_neighbours += 1
                     else:
                         break
+                    index_f += 1
+            print(living_neighbours)
             if cell[2]:
                 if living_neighbours == 2 or living_neighbours == 3:
                     self.create_cell(cell[1], cell[0], 1, 1, buffer)
             else:
-                if living_neighbours > 2:
+                if living_neighbours == 3:
                     self.create_cell(cell[1], cell[0], 1, 1, buffer)
+        print(buffer)
         self.game_board = buffer
 
 
