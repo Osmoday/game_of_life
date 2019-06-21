@@ -2,43 +2,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import time
-
-# class RasterWindow(QWindow):
-#
-#     def render_later(self):
-#         self.requestUpdate()
-#
-#     def render_now(self):
-#         if not self.isExposed():
-#             return
-#         rect = QRect(0, 0, self.width(), self.height())
-#         self.backing_store.beginPaint(QRegion(rect))
-#         device = self.backing_store.paintDevice()
-#         painter = QPainter(device)
-#         painter.fillRect(0, 0, self.width(), self.height(), QGradient.NightFade)
-#         render(painter)
-#         painter.end()
-#
-#     def render(self, painter):
-#         painter.drawText(QRectF(0, 0, self.width(), self.height(), Qt.AlignCenter, "QWindow"))
-#
-#     def resizeEvent(self, _QResizeEvent):
-#         self.backing_store.resize(_QResizeEvent.size())
-#
-#     def exposeEvent(self, _QExposeEvent):
-#         if self.isExposed():
-#             self.render_now()
-#
-#     def event(self, _QEvent):
-#         while _QEvent.type() == QEvent.UpdateRequest:
-#             continue
-#         self.render_now()
-#         return True
-#
-#     def __init__(self):
-#         super().__init__()
-#         self.backing_store = QBackingStore(self)
-#         self.setGeometry(100, 100, 300, 200)
+from operator import itemgetter
 
 
 class Window(QMainWindow):
@@ -53,11 +17,6 @@ class Window(QMainWindow):
         self.game = Game(20)
         self.cell_w = self.width / self.game.size
         self.cell_h = self.height / self.game.size
-        # self.game.game_board[1][3].toggle_state()
-        # self.game.game_board[2][4].toggle_state()
-        # self.game.game_board[3][2].toggle_state()
-        # self.game.game_board[3][3].toggle_state()
-        # self.game.game_board[3][4].toggle_state()
         self.init_window()
 
     def init_window(self):
@@ -73,8 +32,7 @@ class Window(QMainWindow):
         pos_y = 0
         for y in range(0, self.game.size):
             for x in range(0, self.game.size):
-                # self.game.game_board[y][x].define_center(pos_y, pos_x, self.cell_h, self.cell_w)
-                painter.fillRect(pos_x, pos_y, self.cell_w, self.cell_h, self.game.game_board[y][x].state)
+                painter.fillRect(pos_x, pos_y, self.cell_w, self.cell_h, Qt.white)
                 pos_x += self.cell_w
             pos_x = 0
             pos_y += self.cell_h
@@ -86,6 +44,8 @@ class Window(QMainWindow):
                 pos_x += self.cell_w
             pos_x = 0
             pos_y += self.cell_h
+        for cell in self.game.game_board:
+            painter.fillRect(cell[1] * self.cell_w, cell[0] * self.cell_h, self.cell_w, self.cell_h, Qt.black)
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Space:
@@ -103,7 +63,7 @@ class Window(QMainWindow):
         #         dists.append(dist)
         #         cells.append(self.game.game_board[y][x])
         # cells[dists.index(min(dists))].toggle_state()
-        self.game.create_cell()
+        self.game.create_cell(e.x(), e.y(), self.cell_w, self.cell_h, self.game.game_board)
         self.update()
 
 
@@ -111,67 +71,66 @@ class Game:
     def __init__(self, size):
         self.size = size
         self.game_board = list()
-        for i in range(0, size):
-            row = list()
-            for ii in range(0, size):
-                row.append(Cell())
-            self.game_board.append(row)
 
-    def update(self):
-        buffer = Game(self.size)
-        for y in range(0, self.size):
-            for x in range(0, self.size):
-                cnt = 0
-                if y - 1 >= 0:
-                    cnt += self.game_board[y - 1][x].int_val()
-                    if x - 1 >= 0:
-                        cnt += self.game_board[y - 1][x - 1].int_val()
-                    if x + 1 < self.size:
-                        cnt += self.game_board[y - 1][x + 1].int_val()
-                if y + 1 < self.size:
-                    cnt += self.game_board[y + 1][x].int_val()
-                    if x - 1 >= 0:
-                        cnt += self.game_board[y + 1][x - 1].int_val()
-                    if x + 1 < self.size:
-                        cnt += self.game_board[y + 1][x + 1].int_val()
-                if x - 1 >= 0:
-                    cnt += self.game_board[y][x - 1].int_val()
-                if x + 1 < self.size:
-                    cnt += self.game_board[y][x + 1].int_val()
-
-                if self.game_board[y][x].state == Qt.white:
-                    if cnt == 3:
-                        buffer.game_board[y][x].toggle_state()
-                else:
-                    if cnt == 2 or cnt == 3:
-                        buffer.game_board[y][x] = self.game_board[y][x]
-        self.game_board = buffer.game_board
-
-    def create_cell(self, x, y, width, height):
+    def create_cell(self, x, y, width, height, board):
         index_x = int(x / width)
         index_y = int(y / height)
-        self.game.game_board[index_y][index_x] = Cell()
+        board.append((index_y, index_x, True))
+        board.sort(key=itemgetter(0, 1))
+        neighbours = [
+            [0, 0, 0],
+            [0, 1, 0],
+            [0, 0, 0]
+        ]
+        for index in range(0, board.__len__()):
+            for i in range(-1, 2):
+                if board[index][0] == index_y+i:
+                    if board[index][1] == index_x-1:
+                        neighbours[i+1][0] = 1
+                    elif board[index][1] == index_x:
+                        neighbours[i+1][1] = 1
+                    elif board[index][1] == index_x+1:
+                        neighbours[i+1][2] = 1
+        for i in range(0, neighbours.__len__()):
+            for k in range(0, neighbours[i].__len__()):
+                if neighbours[i][k] != 1:
+                    board.append((index_y+(i-1), index_x+(k-1), False))
 
-
-class Cell:
-    def __init__(self):
-        self.state = Qt.white
-        self.center = tuple()
-
-    def toggle_state(self):
-        if self.state == Qt.white:
-            self.state = Qt.black
-        else:
-            self.state = Qt.white
-
-    def int_val(self):
-        if self.state == Qt.white:
-            return 0
-        else:
-            return 1
-
-    def define_center(self, y, x, h, w):
-        self.center = (y + 0.5 * h, x + 0.5 * w)
+    def update(self):
+        buffer = list()
+        self.game_board.sort(key=itemgetter(0, 1))
+        print(self.game_board)
+        living_neighbours = 0
+        for index in range(0, self.game_board.__len__()):
+            index = index
+            cell = self.game_board[index]
+            index_b = index-1
+            index_f = index+1
+            if index_b >= 0:
+                while():
+                    if self.game_board[index_b][0] == cell[0] or self.game_board[index_b][0] == cell[0]-1:
+                        if self.game_board[index_b][1] == cell[1]-1 or self.game_board[index_b][1] == cell[1] or self.game_board[index_b][1] == cell[1]+1:
+                            living_neighbours += 1
+                        else:
+                            index_b -= 1
+                    else:
+                        break
+            if index_f < self.game_board.__len__():
+                while():
+                    if self.game_board[index_f][0] == cell[0] or self.game_board[index_f][0] == cell[0]-1:
+                        if self.game_board[index_f][1] == cell[1]-1 or self.game_board[index_f][1] == cell[1] or self.game_board[index_f][1] == cell[1]+1:
+                            living_neighbours += 1
+                        else:
+                            index_b += 1
+                    else:
+                        break
+            if cell[2]:
+                if living_neighbours == 2 or living_neighbours == 3:
+                    self.create_cell(cell[1], cell[0], 1, 1, buffer)
+            else:
+                if living_neighbours > 2:
+                    self.create_cell(cell[1], cell[0], 1, 1, buffer)
+        self.game_board = buffer
 
 
 app = QApplication([])
