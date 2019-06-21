@@ -3,6 +3,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import time
 from operator import itemgetter
+import threading
+import math
 
 
 class Window(QMainWindow):
@@ -14,9 +16,15 @@ class Window(QMainWindow):
         self.left = 100
         self.width = 700
         self.height = 700
-        self.game = Game(20)
-        self.cell_w = self.width / self.game.size
-        self.cell_h = self.height / self.game.size
+        self.game = Game()
+        self.cell_w = 20
+        self.cell_h = 20
+        self.loop = 0
+        self.kill_loop = False
+        self.x_offset = 0
+        self.y_offset = 0
+        self.offset_step = 40
+        self.screen_geometry = QDesktopWidget().screenGeometry()
         self.init_window()
 
     def init_window(self):
@@ -27,52 +35,68 @@ class Window(QMainWindow):
     def paintEvent(self, e):
         painter = QPainter(self)
         painter.setPen(QPen(Qt.black, 1, Qt.SolidLine))
-        painter.drawRect(0, 0, self.width, self.height)
-        pos_x = 0
-        pos_y = 0
-        for y in range(0, self.game.size):
-            for x in range(0, self.game.size):
-                painter.fillRect(pos_x, pos_y, self.cell_w, self.cell_h, Qt.white)
-                pos_x += self.cell_w
-            pos_x = 0
-            pos_y += self.cell_h
-        pos_x = 0
-        pos_y = 0
-        for y in range(0, self.game.size):
-            for x in range(0, self.game.size):
-                painter.drawRect(pos_x, pos_y, self.cell_w, self.cell_h)
-                pos_x += self.cell_w
-            pos_x = 0
-            pos_y += self.cell_h
+        painter.fillRect(0, 0, self.screen_geometry.width(), self.screen_geometry.height(), Qt.white)
+        for i in range(0, int(self.screen_geometry.height()/self.cell_h)):
+            painter.drawLine(0, i*self.cell_h, self.screen_geometry.width(), i*self.cell_h)
+            for k in range(0, int(self.screen_geometry.width()/self.cell_w)):
+                painter.drawLine(k*self.cell_w, self.screen_geometry.height(), k*self.cell_w, 0)
         for cell in self.game.game_board:
             if cell[2]:
-                painter.fillRect(cell[1] * self.cell_w+1, cell[0] * self.cell_h+1, self.cell_w-1, self.cell_h-1, Qt.black)
-            else:
-                painter.fillRect(cell[1] * self.cell_w+1, cell[0] * self.cell_h+1, self.cell_w-1, self.cell_h-1, Qt.cyan)
+                painter.fillRect((cell[1] * self.cell_w)+self.x_offset, (cell[0] * self.cell_h)+self.y_offset, self.cell_w, self.cell_h, Qt.black)
+            # else:
+            #     painter.fillRect(cell[1] * self.cell_w, cell[0] * self.cell_h, self.cell_w, self.cell_h, Qt.cyan)
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Space:
-            self.game.update()
+            if self.loop == 0 or self.kill_loop:
+                self.kill_loop = False
+                self.loop = threading.Thread(target=self.game_loop, args=(0.1,))
+                self.loop.start()
+            else:
+                self.kill_loop = True
+                self.loop = 0
+        elif e.key() == Qt.Key_A:
+            self.x_offset += self.offset_step
+            self.update()
+        elif e.key() == Qt.Key_D:
+            self.x_offset -= self.offset_step
+            self.update()
+        elif e.key() == Qt.Key_S:
+            self.y_offset -= self.offset_step
+            self.update()
+        elif e.key() == Qt.Key_W:
+            self.y_offset += self.offset_step
             self.update()
 
     def mousePressEvent(self, e):
-        # time1 = time.process_time_ns()
-        # dists = list()
-        # cells = list()
-        # print(e.x(), e.y())
-        # for y in range(0, self.game.size):
-        #     for x in range(0, self.game.size):
-        #         dist = ((e.x() - self.game.game_board[y][x].center[1]) ** 2) + ((e.y() - self.game.game_board[y][x].center[0]) ** 2)
-        #         dists.append(dist)
-        #         cells.append(self.game.game_board[y][x])
-        # cells[dists.index(min(dists))].toggle_state()
-        self.game.create_cell(e.x(), e.y(), self.cell_w, self.cell_h, self.game.game_board)
+        self.game.create_cell(e.x()-self.x_offset, e.y()-self.y_offset, self.cell_w, self.cell_h, self.game.game_board)
         self.update()
+
+    def wheelEvent(self, e):
+        if e.angleDelta().y() < 0:
+            self.cell_w = self.cell_w/2
+            self.cell_h = self.cell_h/2
+            self.offset_step = self.offset_step/2
+            self.y_offset /= 2
+            self.x_offset /= 2
+        else:
+            self.cell_h *= 2
+            self.cell_w *= 2
+            self.offset_step *= 2
+            self.y_offset *= 2
+            self.x_offset *= 2
+        self.update()
+
+    def game_loop(self, tick):
+        while not self.kill_loop:
+            time.sleep(tick)
+        # if self.running == 1:
+            self.game.update()
+            self.update()
 
 
 class Game:
-    def __init__(self, size):
-        self.size = size
+    def __init__(self):
         self.game_board = list()
 
     def create_cell(self, x, y, width, height, board):
@@ -112,7 +136,6 @@ class Game:
     def update(self):
         buffer = list()
         self.game_board.sort(key=itemgetter(0, 1))
-        print(self.game_board)
         for index in range(0, self.game_board.__len__()):
             living_neighbours = 0
             cell = self.game_board[index]
@@ -120,7 +143,6 @@ class Game:
             index_f = index+1
             if index_b >= 0:
                 while True:
-                    print(index_b, "ecksdee")
                     if index_b < 0:
                         break
                     if self.game_board[index_b][0] == cell[0] or self.game_board[index_b][0] == cell[0]-1:
@@ -132,7 +154,6 @@ class Game:
                     index_b -= 1
             if index_f < self.game_board.__len__():
                 while True:
-                    print(index_f)
                     if index_f == self.game_board.__len__():
                         break
                     if self.game_board[index_f][0] == cell[0] or self.game_board[index_f][0] == cell[0]+1:
@@ -142,7 +163,6 @@ class Game:
                     else:
                         break
                     index_f += 1
-            print(living_neighbours)
             if cell[2]:
                 if living_neighbours == 2 or living_neighbours == 3:
                     self.create_cell(cell[1], cell[0], 1, 1, buffer)
